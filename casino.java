@@ -1,45 +1,77 @@
 import java.util.Random;
 import java.util.Scanner;
+
 public class casino {
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         Random rng = new Random();
+
         System.out.println("Hello, welcome to the mini casino world! Please enter your name, Manager: ");
         String name = scanner.nextLine();
         System.out.println("Hello, " + name + "Welcome to the Mini Casino!");
         System.out.println("Manager, please set up the environment parameters for the Agent. The game needs to be done fairly and perfectly.");
 
-        //Getting the initial money as well as the total play time
-        System.out.println("Define the start-up money: ");
-        double initialMoney = scanner.nextDouble();
-        System.out.println("How much play time is allowed? Kindly define in seconds: ");
-        int totalplayTime = scanner.nextInt();
+        // Getting the initial money as well as the total play time (with error retry)
+        double initialMoney = 0.0;
+        while (true) {
+            System.out.println("Define the start-up money: ");
+            if (scanner.hasNextDouble()) {
+                initialMoney = scanner.nextDouble();
+                if (initialMoney >= 1.0) break;
+                System.out.println("[ERROR] Start-up money must be at least Php 1.00 to play! Please try again.");
+            } else {
+                System.out.println("[ERROR] Invalid numeric input! Please enter a valid decimal number.");
+                scanner.next(); // Clear invalid token
+            }
+        }
 
-        //Starting the game today
+        int totalplayTime = 0;
+        while (true) {
+            System.out.println("How much play time is allowed? Kindly define in seconds: ");
+            if (scanner.hasNextInt()) {
+                totalplayTime = scanner.nextInt();
+                if (totalplayTime >= 10) break;
+                System.out.println("[ERROR] Play time must be at least 10 seconds! Please try again.");
+            } else {
+                System.out.println("[ERROR] Invalid numeric input! Please enter a valid integer.");
+                scanner.next(); // Clear invalid token
+            }
+        }
+
+        // Starting the game today
         System.out.println("You have completed the setup! The agent starts with Php " + initialMoney + " dollars for " + totalplayTime + " seconds. ");
 
-        //Get Probabiliy of Winning and the Amount of Money to Bet
-        System.out.println("Let's begin with the first machine!");
-        System.out.println("Please enter the probability of winning between 0 and 1!Let's play fair!");
-        System.out.print("Set a chance rate of winning Php 0: ");
-        double m1_p0 = scanner.nextDouble();
-        System.out.print("Set a chance rate of winning Php 1: ");
-        double m1_p1 = scanner.nextDouble();
-        System.out.print("Set a chance rate of winning Php 5: ");
-        double m1_p5 = scanner.nextDouble();
-        System.out.print("Set a chance rate of winning Php 100: ");
-        double m1_p100 = scanner.nextDouble();
+        // Machine 1 Probabilities (with error retry)
+        double m1_p0 = 0, m1_p1 = 0, m1_p5 = 0, m1_p100 = 0;
+        while (true) {
+            System.out.println("Let's begin with the first machine!");
+            System.out.println("Please enter the probability of winning between 0 and 1!Let's play fair!");
 
+            m1_p0 = getValidProbability(scanner, "Set a chance rate of winning Php 0: ");
+            m1_p1 = getValidProbability(scanner, "Set a chance rate of winning Php 1: ");
+            m1_p5 = getValidProbability(scanner, "Set a chance rate of winning Php 5: ");
+            m1_p100 = getValidProbability(scanner, "Set a chance rate of winning Php 100: ");
 
-        System.out.println("\nNow lets move on to the second machine!"); 
-        System.out.print("Set a chance rate of winning Php 0: ");
-        double m2_p0 = scanner.nextDouble();
-        System.out.print("Set a chance rate of winning Php 1: ");
-        double m2_p1 = scanner.nextDouble();
-        System.out.print("Set a chance rate of winning Php 5: ");
-        double m2_p5 = scanner.nextDouble();
-        System.out.print("Set a chance rate of winning Php 100: ");
-        double m2_p100 = scanner.nextDouble();
+            double sum1 = m1_p0 + m1_p1 + m1_p5 + m1_p100;
+            if (Math.abs(sum1 - 1.0) < 0.0001) break;
+            System.out.printf("[ERROR] Probabilities must sum to 1.0 (100%%)! Current sum: %.4f. Please re-enter Machine 1 rates.%n%n", sum1);
+        }
+
+        // Machine 2 Probabilities (with error retry)
+        double m2_p0 = 0, m2_p1 = 0, m2_p5 = 0, m2_p100 = 0;
+        while (true) {
+            System.out.println("\nNow lets move on to the second machine!");
+
+            m2_p0 = getValidProbability(scanner, "Set a chance rate of winning Php 0: ");
+            m2_p1 = getValidProbability(scanner, "Set a chance rate of winning Php 1: ");
+            m2_p5 = getValidProbability(scanner, "Set a chance rate of winning Php 5: ");
+            m2_p100 = getValidProbability(scanner, "Set a chance rate of winning Php 100: ");
+
+            double sum2 = m2_p0 + m2_p1 + m2_p5 + m2_p100;
+            if (Math.abs(sum2 - 1.0) < 0.0001) break;
+            System.out.printf("[ERROR] Probabilities must sum to 1.0 (100%%)! Current sum: %.4f. Please re-enter Machine 2 rates.%n%n", sum2);
+        }
 
         // --- AGENT DECISION LOGIC (Expected Value Calculation) ---
         double ev1 = (0 * m1_p0) + (1 * m1_p1) + (5 * m1_p5) + (100 * m1_p100);
@@ -53,7 +85,7 @@ public class casino {
         int chosenMachine = (ev2 > ev1) ? 2 : 1;
         System.out.println("Strategy Selected: Agent decides to play Machine " + chosenMachine + " for maximum profit.");
 
-// --- SIMULATION PROCESS ---
+        // --- SIMULATION PROCESS ---
         System.out.println("\n================ NARRATIVE LOG ================");
         int playCount = 0;
         double currentMoney = initialMoney;
@@ -95,5 +127,22 @@ public class casino {
         scanner.close();
     }
 
+    /**
+     * Helper method to validate individual probability entries while keeping your exact prompt text.
+     */
+    private static double getValidProbability(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            if (scanner.hasNextDouble()) {
+                double prob = scanner.nextDouble();
+                if (prob >= 0.0 && prob <= 1.0) {
+                    return prob;
+                }
+                System.out.println("[ERROR] Rate must be between 0.0 and 1.0! Please try again.");
+            } else {
+                System.out.println("[ERROR] Invalid numeric input! Please enter a valid decimal.");
+                scanner.next(); // Clear invalid token
+            }
+        }
     }
-
+}
